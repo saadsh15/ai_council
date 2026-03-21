@@ -25,7 +25,7 @@
 Clone the repository and run the automated installer:
 
 ```bash
-git clone https://github.com/your-username/ai-council.git
+git clone https://github.com/saadsh15/ai-council.git
 cd ai-council
 bash scripts/install.sh
 ```
