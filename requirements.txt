@@ -1,0 +1,10 @@
+typer
+textual
+httpx
+pyyaml
+rich
+asyncio
+python-dotenv
+pydantic
+numpy
+duckduckgo-search

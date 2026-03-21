@@ -1,0 +1,58 @@
+CouncilApp {
+    layout: vertical;
+}
+
+#sidebar {
+    width: 25%;
+    background: $surface;
+    border-right: tall $primary;
+}
+
+#agent-list {
+    height: 100%;
+}
+
+ListItem {
+    padding: 0;
+    margin: 0;
+    background: transparent;
+}
+
+AgentStatusWidget {
+    margin: 0 1;
+}
+
+.sidebar-title {
+    padding: 1;
+    background: $primary;
+    color: $text;
+    text-align: center;
+    text-style: bold;
+}
+
+#main-content {
+    width: 80%;
+}
+
+.section-title {
+    padding: 0 1;
+    background: $accent;
+    color: $text;
+    text-style: bold;
+}
+
+#output-log {
+    height: 60%;
+    border-bottom: solid $primary;
+}
+
+#system-log {
+    height: 30%;
+    background: $surface;
+}
+
+#command-input {
+    height: 3;
+    border: tall $primary;
+    margin: 1;
+}

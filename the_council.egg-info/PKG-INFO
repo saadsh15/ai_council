@@ -1,0 +1,23 @@
+Metadata-Version: 2.4
+Name: the-council
+Version: 0.1.0
+Summary: Multi-Agent AI Research Terminal Application
+Author: The Council Team
+Classifier: Programming Language :: Python :: 3.11
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.11
+Requires-Dist: typer
+Requires-Dist: textual
+Requires-Dist: httpx
+Requires-Dist: pyyaml
+Requires-Dist: rich
+Requires-Dist: asyncio
+Requires-Dist: python-dotenv
+Requires-Dist: pydantic
+Requires-Dist: numpy
+Requires-Dist: duckduckgo-search
+Dynamic: author
+Dynamic: classifier
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary

@@ -1,0 +1,19 @@
+# Environments
+.env
+.venv/
+venv/
+ENV/
+
+# Python Caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Application Data
+storage/sessions/*.json
+storage/rag_index.json
+config/default_config.yaml
+
+# OS Files
+.DS_Store
+Thumbs.db
