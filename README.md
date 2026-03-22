@@ -40,6 +40,17 @@ bash scripts/install_mac.sh
 
 After installation, restart your terminal or run `source ~/.bashrc` (Linux) or `source ~/.zshrc` (Mac).
 
+### Environment Configuration
+The application can use both local models (Ollama) and web-based AI APIs. To use web-based providers, copy the `.env.example` file and add your API keys:
+
+```bash
+cp .env.example .env
+```
+
+Edit the `.env` file and provide keys for the models you want to use:
+- **Gemini:** [Get API Key](https://aistudio.google.com/app/apikey)
+- **DeepSeek:** [Get API Key](https://platform.deepseek.com/)
+
 ### Running the App
 Simply type:
 ```bash
