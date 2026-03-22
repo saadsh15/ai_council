@@ -58,7 +58,7 @@ class CouncilApp(App):
         yield Footer()
 
     def on_mount(self) -> None:
-        self.council = Council(logger=self.system_log)
+        self.council = Council(system_logger=self.system_log, research_logger=self.log_message)
         self.command_handler = CommandHandler(self, self.council)
         self.system_log("Welcome to [bold]THE COUNCIL[/] Multi-Agent AI Research Terminal.")
         self.system_log("Type [cyan]/council help[/cyan] for available commands.")

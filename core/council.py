@@ -18,16 +18,29 @@ from utils.web_search import WebSearcher, format_search_results
 from datetime import datetime
 
 class Council:
-    def __init__(self, logger: Optional[Callable] = None):
+    def __init__(self, system_logger: Optional[Callable] = None, research_logger: Optional[Callable] = None):
         self.config: AppConfig = load_config()
         self.session_manager = SessionManager()
         self.agents: List[BaseAgent] = []
         self.current_session: Optional[Session] = None
-        self.logger = logger or print
+        self.logger = system_logger or print
+        self.research_logger = research_logger or self.logger
         self.available_ollama_models: List[OllamaModel] = []
         self.embedder = Embedder()
         self.vector_store = VectorStore()
         self.web_searcher = WebSearcher()
+
+    def log(self, message: str):
+        if self.logger:
+            self.logger(message)
+        else:
+            print(message)
+
+    def log_research(self, message: str):
+        if self.research_logger:
+            self.research_logger(message)
+        else:
+            self.log(message)
 
     async def _get_web_context(self, query: str) -> str:
         """Perform web search for the latest info."""
@@ -65,10 +78,6 @@ class Council:
         except Exception as e:
             self.log(f"[yellow]Ollama connection failed: {str(e)}[/]")
 
-    def log(self, message: str):
-        if self.logger:
-            self.logger(message)
-
     def add_agent(self, provider: str, model: Optional[str] = None) -> str:
         agent_id = f"{provider}-{len(self.agents) + 1}"
         
@@ -85,6 +94,11 @@ class Council:
             raise ValueError(f"Unsupported provider: {provider}")
         
         self.agents.append(agent)
+        
+        # Refresh UI sidebar if available
+        if hasattr(self.logger, "__self__") and hasattr(self.logger.__self__, "update_agent_list"):
+            self.logger.__self__.update_agent_list()
+            
         return agent_id
 
     async def run_deliberation(self, query: str):
@@ -204,9 +218,11 @@ class Council:
 
         self.log(f"Deliberation complete. Session saved: {self.current_session.session_id}")
 
-        if hasattr(self.logger, '__self__') and hasattr(self.logger.__self__, 'log_message'):
-            self.logger.__self__.log_message("\n[bold green]COUNCIL DELIBERATION FINAL ANSWER:[/]")
-            self.logger.__self__.log_message(self.current_session.final_consensus)
+        if self.current_session.final_consensus:
+            self.log_research("\n[bold green]COUNCIL DELIBERATION FINAL ANSWER:[/]")
+            self.log_research(self.current_session.final_consensus)
+        else:
+            self.log_research("[red]Deliberation failed: No final answer reached.[/]")
 
     def remove_agent(self, agent_id: str):
         self.agents = [a for a in self.agents if a.agent_id != agent_id]
@@ -336,6 +352,13 @@ class Council:
                 self.log("[yellow]Maximum rounds reached. Stopping.[/]")
                 break
 
+        # If no strict consensus was reached, pick the best output available
+        if not self.current_session.final_consensus and self.current_session.outputs:
+            self.log("[yellow]No strict consensus reached. Selecting highest-scored output as fallback.[/]")
+            final_output = sorted(self.current_session.outputs, key=lambda x: x.scores.average, reverse=True)[0]
+            self.current_session.final_consensus = final_output.content
+            self.current_session.status = SessionStatus.COMPLETED
+
         # Save session
         self.session_manager.save_session(self.current_session)
         
@@ -353,12 +376,13 @@ class Council:
         # Log to system
         self.log(f"Session saved: {self.current_session.session_id}")
 
-        # Log to researcher output (if possible via logger callback logic)
-        # We need a way to send the final result to the researcher log specifically.
-        # Let's check if the logger is a method on CouncilApp.
-        if hasattr(self.logger, '__self__') and hasattr(self.logger.__self__, 'log_message'):
-            self.logger.__self__.log_message("\n[bold cyan]FINAL RESEARCH OUTPUT:[/]")
-            self.logger.__self__.log_message(self.current_session.final_consensus)
+        # Log to researcher output
+        if self.current_session.final_consensus:
+            self.log_research("\n[bold cyan]FINAL RESEARCH OUTPUT:[/]")
+            self.log_research(self.current_session.final_consensus)
         else:
-            self.log("\n[bold cyan]Final Consensus Output:[/]")
-            self.log(self.current_session.final_consensus)
+            self.log_research("[red]Research failed: No valid consensus or output generated.[/]")
+            
+        # Final UI sidebar refresh
+        if hasattr(self.logger, "__self__") and hasattr(self.logger.__self__, "update_agent_list"):
+            self.logger.__self__.update_agent_list()
