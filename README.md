@@ -22,15 +22,23 @@
 - **Ollama** (Recommended for local models) - [Download here](https://ollama.com/)
 
 ### Installation
-Clone the repository and run the automated installer:
+Clone the repository and run the automated installer for your platform:
 
+#### Linux
 ```bash
 git clone https://github.com/saadsh15/ai_council.git
 cd ai_council
 bash scripts/install.sh
 ```
 
-After installation, restart your terminal or run `source ~/.bashrc`.
+#### macOS
+```bash
+git clone https://github.com/saadsh15/ai_council.git
+cd ai_council
+bash scripts/install_mac.sh
+```
+
+After installation, restart your terminal or run `source ~/.bashrc` (Linux) or `source ~/.zshrc` (Mac).
 
 ### Running the App
 Simply type:
