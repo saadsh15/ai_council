@@ -3,11 +3,18 @@
 .venv/
 venv/
 ENV/
+.the-council-venv/
 
 # Python Caches
 __pycache__/
 *.py[cod]
 *$py.class
+
+# Build Artifacts
+build/
+dist/
+*.egg-info/
+the-council.spec
 
 # Application Data
 storage/sessions/*.json
