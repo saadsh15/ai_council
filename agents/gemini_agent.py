@@ -1,5 +1,6 @@
 import httpx
 import json
+import re
 import uuid
 import os
 from typing import List, Optional
@@ -7,10 +8,12 @@ from agents.base_agent import BaseAgent
 from utils.models import Output, Scores, AgentStatus
 from datetime import datetime
 from storage.config import get_api_key
+from utils.retry import retry_async
 
 class GeminiAgent(BaseAgent):
-    def __init__(self, agent_id: str, model: str = "gemini-1.5-flash"):
-        super().__init__(agent_id, model, "gemini")
+    def __init__(self, agent_id: str, model: str = "gemini-1.5-flash",
+                 generate_timeout: float = 300.0, evaluate_timeout: float = 120.0):
+        super().__init__(agent_id, model, "gemini", generate_timeout=generate_timeout, evaluate_timeout=evaluate_timeout)
         self.api_key = get_api_key("gemini")
         self.base_url = "https://generativelanguage.googleapis.com/v1beta/models"
 
@@ -18,8 +21,12 @@ class GeminiAgent(BaseAgent):
         if not self.api_key:
             raise ValueError(f"API key for {self.provider} not found.")
 
-        url = f"{self.base_url}/{self.model}:generateContent?key={self.api_key}"
-        
+        url = f"{self.base_url}/{self.model}:generateContent"
+        headers = {
+            "Content-Type": "application/json",
+            "x-goog-api-key": self.api_key,
+        }
+
         full_prompt = (
             "You are a specialized research agent. Provide a detailed, fact-based response. "
             "You MUST include verifiable sources and citations for all claims. "
@@ -32,21 +39,23 @@ class GeminiAgent(BaseAgent):
             "contents": [{"parts": [{"text": full_prompt}]}]
         }
 
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            response = await client.post(url, json=payload)
-            response.raise_for_status()
-            data = response.json()
-            content = data['candidates'][0]['content']['parts'][0]['text']
+        async def _do_request():
+            async with httpx.AsyncClient(timeout=self.generate_timeout) as client:
+                response = await client.post(url, json=payload, headers=headers)
+                response.raise_for_status()
+                return response.json()
+
+        data = await retry_async(_do_request)
+        content = data['candidates'][0]['content']['parts'][0]['text']
 
         confidence = 0.8
         if "CONFIDENCE:" in content:
             try:
                 conf_str = content.split("CONFIDENCE:")[1].strip().split()[0]
                 confidence = float(conf_str)
-            except:
+            except (ValueError, IndexError):
                 pass
 
-        import re
         sources = re.findall(r'https?://\S+', content)
 
         return Output(
@@ -62,8 +71,12 @@ class GeminiAgent(BaseAgent):
         if not self.api_key:
             raise ValueError(f"API key for {self.provider} not found.")
 
-        url = f"{self.base_url}/{self.model}:generateContent?key={self.api_key}"
-        
+        url = f"{self.base_url}/{self.model}:generateContent"
+        headers = {
+            "Content-Type": "application/json",
+            "x-goog-api-key": self.api_key,
+        }
+
         eval_prompt = (
             "You are an expert critic. Evaluate the following research output based on: "
             "1. Accuracy (factual correctness)\n"
@@ -82,16 +95,19 @@ class GeminiAgent(BaseAgent):
             }
         }
 
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(url, json=payload)
-            response.raise_for_status()
-            data = response.json()
-            eval_data = json.loads(data['candidates'][0]['content']['parts'][0]['text'])
-            
-            return Scores(
-                accuracy=eval_data.get('accuracy', 0.0),
-                completeness=eval_data.get('completeness', 0.0),
-                source_quality=eval_data.get('source_quality', 0.0),
-                clarity=eval_data.get('clarity', 0.0),
-                average=eval_data.get('average', 0.0)
-            )
+        async def _do_request():
+            async with httpx.AsyncClient(timeout=self.evaluate_timeout) as client:
+                response = await client.post(url, json=payload, headers=headers)
+                response.raise_for_status()
+                return response.json()
+
+        data = await retry_async(_do_request)
+        eval_data = json.loads(data['candidates'][0]['content']['parts'][0]['text'])
+
+        return Scores(
+            accuracy=eval_data.get('accuracy', 0.0),
+            completeness=eval_data.get('completeness', 0.0),
+            source_quality=eval_data.get('source_quality', 0.0),
+            clarity=eval_data.get('clarity', 0.0),
+            average=eval_data.get('average', 0.0)
+        )

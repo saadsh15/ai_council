@@ -3,6 +3,7 @@ import asyncio
 from typing import List, Optional, Callable
 from pydantic import BaseModel
 from core.council import Council
+from utils.models import AgentStatus
 
 class CommandResult(BaseModel):
     success: bool
@@ -24,6 +25,9 @@ class CommandHandler:
             "/council config": self.handle_config,
             "/council history": self.handle_history,
             "/council clear": self.handle_clear,
+            "/council vote": self.handle_vote,
+            "/council eliminate": self.handle_eliminate,
+            "/council export": self.handle_export,
             "/quit": self.handle_quit,
         }
 
@@ -50,14 +54,19 @@ class CommandHandler:
 [bold yellow]Available Commands:[/bold yellow]
 /council start - Initialize the council with default agents
 /council begin <query> - Start a deliberative council meeting (agents talk to each other)
-/council add <provider> [model] - Add an agent
+/council add <provider> [model] - Add an agent (providers: ollama, gemini, deepseek, claude, openai)
 /council remove <agent_id> - Remove an agent
-/council list - List all agents
+/council list - List all agents and available models
 /council research <query> - Begin standard research (consensus via elimination)
+/council vote - View current voting scores
+/council eliminate <agent_id> - Manually eliminate an agent
+/council export [json|text] - Export current session
 /council config - View/modify configuration
 /council config preferences <text> - Set research tailoring preferences
-/council history - View history
-/council clear - Clear current session
+/council config threshold <value> - Set consensus threshold (0-100)
+/council config timeout <seconds> - Set API timeout
+/council history - View session history
+/council clear confirm - Clear all session history
 /quit - Exit
 """
         return CommandResult(success=True, message=help_text)
@@ -94,9 +103,13 @@ class CommandHandler:
     async def handle_add(self, args: List[str]) -> CommandResult:
         if not args:
             return CommandResult(success=False, message="Usage: /council add <provider> [model]")
-        provider = args[0]
+        provider = args[0].lower()
         model = args[1] if len(args) > 1 else None
-        
+
+        supported_providers = ["ollama", "gemini", "deepseek", "claude", "openai"]
+        if provider not in supported_providers:
+            return CommandResult(success=False, message=f"Unknown provider: '{provider}'. Supported: {', '.join(supported_providers)}")
+
         if provider == "ollama":
             available = [m.name for m in self.council.available_ollama_models]
             if model and model not in available:
@@ -122,7 +135,7 @@ class CommandHandler:
         if agents:
             msg += "[bold yellow]Active Agents in Council:[/bold yellow]\n"
             for a in agents:
-                status_color = "green" if a.status == "active" else "red"
+                status_color = "green" if a.status == AgentStatus.ACTIVE else "red"
                 msg += f"- {a.agent_id} ({a.provider}:{a.model}) [[{status_color}]{a.status}[/]]\n"
             msg += "\n"
         else:
@@ -152,13 +165,58 @@ class CommandHandler:
         return CommandResult(success=True, message=f"Research started for: [cyan]{query}[/]")
 
     async def handle_vote(self, args: List[str]) -> CommandResult:
-        return CommandResult(success=True, message="Manual voting not fully implemented yet.")
+        if not self.council.current_session or not self.council.current_session.outputs:
+            return CommandResult(success=False, message="No active session with outputs to vote on.")
+
+        outputs = self.council.current_session.outputs
+        msg = "[bold yellow]Current Outputs & Scores:[/bold yellow]\n"
+        for i, o in enumerate(outputs):
+            msg += f"  {i+1}. {o.agent_id} — avg: {o.scores.average:.2f} | confidence: {o.confidence:.2f}\n"
+        msg += "\nVoting is determined automatically by cross-agent evaluation during research rounds."
+        return CommandResult(success=True, message=msg)
 
     async def handle_eliminate(self, args: List[str]) -> CommandResult:
-        return CommandResult(success=True, message="Manual elimination not fully implemented yet.")
+        if not args:
+            return CommandResult(success=False, message="Usage: /council eliminate <agent_id>")
+
+        agent_id = args[0]
+        found = False
+        for agent in self.council.agents:
+            if agent.agent_id == agent_id:
+                if agent.status == AgentStatus.ELIMINATED:
+                    return CommandResult(success=False, message=f"Agent {agent_id} is already eliminated.")
+                agent.status = AgentStatus.ELIMINATED
+                found = True
+                break
+
+        if not found:
+            return CommandResult(success=False, message=f"Agent '{agent_id}' not found.")
+        return CommandResult(success=True, message=f"Manually eliminated agent: [red]{agent_id}[/]")
 
     async def handle_export(self, args: List[str]) -> CommandResult:
-        return CommandResult(success=True, message="Export not implemented yet.")
+        if not self.council.current_session:
+            return CommandResult(success=False, message="No active session to export.")
+
+        fmt = args[0].lower() if args else "json"
+        session = self.council.current_session
+
+        if fmt == "json":
+            import json
+            export_path = f"council_export_{session.session_id[:8]}.json"
+            with open(export_path, "w") as f:
+                f.write(session.model_dump_json(indent=2))
+            return CommandResult(success=True, message=f"Session exported to: [cyan]{export_path}[/]")
+        elif fmt == "text":
+            export_path = f"council_export_{session.session_id[:8]}.txt"
+            with open(export_path, "w") as f:
+                f.write(f"Query: {session.query}\n")
+                f.write(f"Status: {session.status.value}\n")
+                f.write(f"Created: {session.created_at}\n\n")
+                f.write("--- Final Consensus ---\n")
+                f.write(session.final_consensus or "No consensus reached.\n")
+            return CommandResult(success=True, message=f"Session exported to: [cyan]{export_path}[/]")
+        else:
+            return CommandResult(success=False, message=f"Unsupported format: '{fmt}'. Use 'json' or 'text'.")
 
     async def handle_config(self, args: List[str]) -> CommandResult:
         if not args:
@@ -193,13 +251,27 @@ class CommandHandler:
             return CommandResult(success=True, message=f"Updated default Ollama model to: [cyan]{value}[/]")
         elif key == "threshold":
             try:
-                self.council.config.threshold = float(value)
+                threshold = float(value)
+                if not (0 <= threshold <= 100):
+                    return CommandResult(success=False, message="Threshold must be between 0 and 100.")
+                self.council.config.threshold = threshold
                 save_config(self.council.config)
                 return CommandResult(success=True, message=f"Updated Threshold to: {value}%")
-            except:
+            except (ValueError, TypeError):
                 return CommandResult(success=False, message="Threshold must be a number.")
-        
-        return CommandResult(success=False, message=f"Unknown config key: {key}")
+        elif key == "timeout":
+            try:
+                timeout = float(value)
+                if timeout <= 0:
+                    return CommandResult(success=False, message="Timeout must be a positive number.")
+                self.council.config.generate_timeout = timeout
+                save_config(self.council.config)
+                return CommandResult(success=True, message=f"Updated generate timeout to: {value}s")
+            except (ValueError, TypeError):
+                return CommandResult(success=False, message="Timeout must be a number.")
+
+        valid_keys = ["preferences", "model", "threshold", "timeout"]
+        return CommandResult(success=False, message=f"Unknown config key: '{key}'. Valid keys: {', '.join(valid_keys)}")
 
     async def handle_history(self, args: List[str]) -> CommandResult:
         sessions = self.council.session_manager.list_sessions()
@@ -207,11 +279,17 @@ class CommandHandler:
             return CommandResult(success=True, message="No history found.")
         
         msg = "[bold yellow]Session History:[/bold yellow]\n"
-        for s in sessions[:10]: # Last 10
+        for s in sessions[:self.council.config.max_history]:
             msg += f"- {s.created_at.strftime('%Y-%m-%d %H:%M')} | {s.query[:30]}... ({s.status})\n"
         return CommandResult(success=True, message=msg)
 
     async def handle_clear(self, args: List[str]) -> CommandResult:
+        if not args or args[0] != "confirm":
+            session_count = len(self.council.session_manager.list_sessions())
+            return CommandResult(
+                success=False,
+                message=f"This will delete {session_count} session(s). Run [cyan]/council clear confirm[/cyan] to proceed."
+            )
         self.council.session_manager.clear_sessions()
         return CommandResult(success=True, message="History cleared.")
 

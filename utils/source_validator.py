@@ -8,7 +8,7 @@ async def validate_source(url: str) -> bool:
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.head(url)
             return response.status_code == 200
-    except:
+    except (httpx.HTTPError, httpx.TimeoutException):
         return False
 
 async def validate_sources(urls: List[str]) -> List[bool]:

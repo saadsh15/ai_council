@@ -1,15 +1,18 @@
 import httpx
 import json
+import re
 import uuid
 from typing import List, Optional
 from agents.base_agent import BaseAgent
 from utils.models import Output, Scores, AgentStatus
 from datetime import datetime
 from storage.config import get_api_key
+from utils.retry import retry_async
 
 class DeepSeekAgent(BaseAgent):
-    def __init__(self, agent_id: str, model: str = "deepseek-chat"):
-        super().__init__(agent_id, model, "deepseek")
+    def __init__(self, agent_id: str, model: str = "deepseek-chat",
+                 generate_timeout: float = 300.0, evaluate_timeout: float = 120.0):
+        super().__init__(agent_id, model, "deepseek", generate_timeout=generate_timeout, evaluate_timeout=evaluate_timeout)
         self.api_key = get_api_key("deepseek")
         self.base_url = "https://api.deepseek.com/v1/chat/completions"
 
@@ -44,11 +47,14 @@ class DeepSeekAgent(BaseAgent):
             "Content-Type": "application/json"
         }
 
-        async with httpx.AsyncClient(timeout=180.0) as client:
-            response = await client.post(self.base_url, json=payload, headers=headers)
-            response.raise_for_status()
-            data = response.json()
-            content = data['choices'][0]['message']['content']
+        async def _do_request():
+            async with httpx.AsyncClient(timeout=self.generate_timeout) as client:
+                response = await client.post(self.base_url, json=payload, headers=headers)
+                response.raise_for_status()
+                return response.json()
+
+        data = await retry_async(_do_request)
+        content = data['choices'][0]['message']['content']
 
         # Parse confidence score if available
         confidence = 0.85 # Default
@@ -56,11 +62,10 @@ class DeepSeekAgent(BaseAgent):
             try:
                 conf_str = content.split("CONFIDENCE:")[1].strip().split()[0]
                 confidence = float(conf_str)
-            except:
+            except (ValueError, IndexError):
                 pass
 
         # Extract sources (look for URLs)
-        import re
         sources = re.findall(r'https?://\S+', content)
 
         return Output(
@@ -103,17 +108,20 @@ class DeepSeekAgent(BaseAgent):
             "Content-Type": "application/json"
         }
 
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(self.base_url, json=payload, headers=headers)
-            response.raise_for_status()
-            data = response.json()
-            content = data['choices'][0]['message']['content']
-            eval_data = json.loads(content)
-            
-            return Scores(
-                accuracy=eval_data.get('accuracy', 0.1),
-                completeness=eval_data.get('completeness', 0.1),
-                source_quality=eval_data.get('source_quality', 0.1),
-                clarity=eval_data.get('clarity', 0.1),
-                average=eval_data.get('average', 0.1)
-            )
+        async def _do_request():
+            async with httpx.AsyncClient(timeout=self.evaluate_timeout) as client:
+                response = await client.post(self.base_url, json=payload, headers=headers)
+                response.raise_for_status()
+                return response.json()
+
+        data = await retry_async(_do_request)
+        content = data['choices'][0]['message']['content']
+        eval_data = json.loads(content)
+
+        return Scores(
+            accuracy=eval_data.get('accuracy', 0.1),
+            completeness=eval_data.get('completeness', 0.1),
+            source_quality=eval_data.get('source_quality', 0.1),
+            clarity=eval_data.get('clarity', 0.1),
+            average=eval_data.get('average', 0.1)
+        )

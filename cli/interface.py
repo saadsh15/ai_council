@@ -17,23 +17,11 @@ class AgentStatusWidget(Static):
         self.status = status
 
     def render(self) -> Panel:
-        color = "green" if self.status == "active" else "red"
-        # Handle string or enum
-        status_str = self.status.value if hasattr(self.status, "value") else str(self.status)
+        color = "green" if self.status == AgentStatus.ACTIVE else "red"
+        status_str = self.status.value if isinstance(self.status, AgentStatus) else str(self.status)
         return Panel(f"[{color}]{self.agent_id}[/]\n{status_str.upper()}", title="Agent", padding=(0, 1))
 
-import os
-import sys
-
-def get_resource_path(relative_path):
-    """ Get absolute path to resource, works for dev and for PyInstaller """
-    try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-    return os.path.join(base_path, relative_path)
+from utils.paths import get_resource_path
 
 class CouncilApp(App):
     TITLE = "THE COUNCIL - AI Research Terminal"
@@ -73,24 +61,24 @@ class CouncilApp(App):
             agent_list.clear()
             for agent in self.council.list_agents():
                 agent_list.append(ListItem(AgentStatusWidget(agent.agent_id, agent.status)))
-        except:
-            pass
+        except Exception:
+            pass  # UI widget may not be mounted yet
 
     def log_message(self, message: str):
         """User-visible research output messages."""
         try:
             log = self.query_one("#output-log", RichLog)
             log.write(message)
-        except:
-            print(message)
+        except Exception:
+            print(message)  # Fallback before TUI is mounted
 
     def system_log(self, message: str):
         """Technical background system logs."""
         try:
             log = self.query_one("#system-log", RichLog)
             log.write(message)
-        except:
-            print(f"[System] {message}")
+        except Exception:
+            print(f"[System] {message}")  # Fallback before TUI is mounted
 
     async def on_input_submitted(self, event: Input.Submitted) -> None:
         command = event.value.strip()

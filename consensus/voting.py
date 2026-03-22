@@ -1,12 +1,12 @@
 from typing import List, Dict
 import asyncio
 from agents.base_agent import BaseAgent
-from utils.models import Output, Session, Scores
+from utils.models import Output, Session, Scores, AgentStatus
 from consensus.scoring import update_output_scores
 
 class ConsensusManager:
     def __init__(self, agents: List[BaseAgent]):
-        self.agents = {a.agent_id: a for a in agents if a.status == "active"}
+        self.agents = {a.agent_id: a for a in agents if a.status == AgentStatus.ACTIVE}
 
     async def run_voting_round(self, outputs: List[Output]) -> List[Output]:
         """Conduct a voting round where agents evaluate each other's outputs."""
