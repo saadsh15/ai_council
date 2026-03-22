@@ -7,15 +7,15 @@ from utils.models import Output, Scores, AgentStatus
 from datetime import datetime
 
 class OllamaAgent(BaseAgent):
-    def __init__(self, agent_id: str, model: str = "qwen3-coder:30b", base_url: str = "http://localhost:11434"):
-        super().__init__(agent_id, model, "ollama")
+    def __init__(self, agent_id: str, model: str = "qwen3-coder:30b", base_url: str = "http://localhost:11434", system_prompt: Optional[str] = None):
+        super().__init__(agent_id, model, "ollama", system_prompt)
         self.base_url = base_url
 
     async def generate(self, prompt: str, context: Optional[str] = None) -> Output:
         """Generate research output for a given prompt."""
         url = f"{self.base_url}/api/chat"
         
-        system_msg = (
+        system_msg = self.system_prompt or (
             "You are a specialized research agent. Provide a detailed, fact-based response. "
             "You MUST include verifiable sources and citations for all claims. "
             "State your confidence level (0.0 to 1.0) at the end of your response in the format: "

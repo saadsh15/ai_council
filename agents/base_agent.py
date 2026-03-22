@@ -3,11 +3,12 @@ from typing import List, Optional
 from utils.models import Output, Scores
 
 class BaseAgent(ABC):
-    def __init__(self, agent_id: str, model: str, provider: str):
+    def __init__(self, agent_id: str, model: str, provider: str, system_prompt: Optional[str] = None):
         self.agent_id = agent_id
         self.model = model
         self.provider = provider
         self.status = "active"
+        self.system_prompt = system_prompt
 
     @abstractmethod
     async def generate(self, prompt: str, context: Optional[str] = None) -> Output:

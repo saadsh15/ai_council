@@ -18,8 +18,10 @@ class AppConfig(BaseModel):
     threshold: float = 80.0
     timeout: int = 30
     verbose: bool = False
+    palette: str = "default"
     providers: Dict[str, ProviderConfig] = Field(default_factory=dict)
     user_preferences: str = "" # New field for RAG-based tailoring
+    system_prompt: str = "You are a member of 'The Council', a group of high-performance AI agents. Your goal is to provide accurate, complete, and well-sourced research."
 
 import sys
 

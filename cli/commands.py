@@ -22,8 +22,10 @@ class CommandHandler:
             "/council list": self.handle_list,
             "/council research": self.handle_research,
             "/council config": self.handle_config,
+            "/council preferences": self.handle_preferences,
             "/council history": self.handle_history,
             "/council clear": self.handle_clear,
+            "/council toggle": self.handle_toggle,
             "/quit": self.handle_quit,
         }
 
@@ -53,14 +55,25 @@ class CommandHandler:
 /council add <provider> [model] - Add an agent
 /council remove <agent_id> - Remove an agent
 /council list - List all agents
+/council preferences <text> - Set global research tailoring preferences
+/council toggle - Toggle active agents sidebar (Shortcut: Ctrl+B)
 /council research <query> - Begin standard research (consensus via elimination)
-/council config - View/modify configuration
-/council config preferences <text> - Set research tailoring preferences
+/council config - View/modify configuration (e.g., /council config prompt <text>)
 /council history - View history
 /council clear - Clear current session
 /quit - Exit
 """
         return CommandResult(success=True, message=help_text)
+
+    async def handle_preferences(self, args: List[str]) -> CommandResult:
+        if not args:
+            return CommandResult(success=False, message="Usage: /council preferences <text>")
+        
+        value = " ".join(args)
+        from storage.config import save_config
+        self.council.config.user_preferences = value
+        save_config(self.council.config)
+        return CommandResult(success=True, message=f"Updated User Preferences to: [cyan]{value}[/]")
 
     async def handle_begin(self, args: List[str]) -> CommandResult:
         if not args:
@@ -168,7 +181,9 @@ class CommandHandler:
             msg += f"Default Model: {config.default_model}\n"
             msg += f"Threshold: {config.threshold}%\n"
             msg += f"Timeout: {config.timeout}s\n"
+            msg += f"Palette: {config.palette}\n"
             msg += f"User Preferences: [dim]{config.user_preferences or 'None set'}[/]\n"
+            msg += f"System Prompt: [dim]{config.system_prompt or 'Default'}[/]\n"
             return CommandResult(success=True, message=msg)
         
         if len(args) < 2:
@@ -183,6 +198,23 @@ class CommandHandler:
             self.council.config.user_preferences = value
             save_config(self.council.config)
             return CommandResult(success=True, message=f"Updated User Preferences to: [cyan]{value}[/]")
+        elif key == "prompt":
+            self.council.config.system_prompt = value
+            save_config(self.council.config)
+            # Update existing agents' prompts
+            for agent in self.council.agents:
+                agent.system_prompt = value
+            return CommandResult(success=True, message=f"Updated Global System Prompt to: [cyan]{value}[/]")
+        elif key == "palette":
+            valid_palettes = ["default", "cyberpunk", "nord", "dracula"]
+            if value.lower() not in valid_palettes:
+                return CommandResult(success=False, message=f"Invalid palette. Available: {', '.join(valid_palettes)}")
+            
+            self.council.config.palette = value.lower()
+            save_config(self.council.config)
+            # Apply to app immediately
+            self.app.set_palette(value.lower())
+            return CommandResult(success=True, message=f"Updated Palette to: [cyan]{value}[/]")
         elif key == "model":
             available = [m.name for m in self.council.available_ollama_models]
             if value not in available:
@@ -214,6 +246,11 @@ class CommandHandler:
     async def handle_clear(self, args: List[str]) -> CommandResult:
         self.council.session_manager.clear_sessions()
         return CommandResult(success=True, message="History cleared.")
+
+    async def handle_toggle(self, args: List[str]) -> CommandResult:
+        """Toggle the active agents sidebar."""
+        self.app.action_toggle_sidebar()
+        return CommandResult(success=True, message="Sidebar toggled.")
 
     async def handle_quit(self, args: List[str]) -> CommandResult:
         self.app.exit()

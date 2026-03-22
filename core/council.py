@@ -83,13 +83,13 @@ class Council:
         
         if provider == "ollama":
             model = model or self.config.default_model
-            agent = OllamaAgent(agent_id, model)
+            agent = OllamaAgent(agent_id, model, system_prompt=self.config.system_prompt)
         elif provider == "gemini":
             model = model or "gemini-1.5-flash"
-            agent = GeminiAgent(agent_id, model)
+            agent = GeminiAgent(agent_id, model, system_prompt=self.config.system_prompt)
         elif provider == "deepseek":
             model = model or "deepseek-chat"
-            agent = DeepSeekAgent(agent_id, model)
+            agent = DeepSeekAgent(agent_id, model, system_prompt=self.config.system_prompt)
         else:
             raise ValueError(f"Unsupported provider: {provider}")
         

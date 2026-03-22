@@ -9,8 +9,8 @@ from datetime import datetime
 from storage.config import get_api_key
 
 class GeminiAgent(BaseAgent):
-    def __init__(self, agent_id: str, model: str = "gemini-1.5-flash"):
-        super().__init__(agent_id, model, "gemini")
+    def __init__(self, agent_id: str, model: str = "gemini-1.5-flash", system_prompt: Optional[str] = None):
+        super().__init__(agent_id, model, "gemini", system_prompt)
         self.api_key = get_api_key("gemini")
         self.base_url = "https://generativelanguage.googleapis.com/v1beta/models"
 
@@ -20,11 +20,15 @@ class GeminiAgent(BaseAgent):
 
         url = f"{self.base_url}/{self.model}:generateContent?key={self.api_key}"
         
-        full_prompt = (
+        system_msg = self.system_prompt or (
             "You are a specialized research agent. Provide a detailed, fact-based response. "
             "You MUST include verifiable sources and citations for all claims. "
             "State your confidence level (0.0 to 1.0) at the end of your response in the format: "
-            "CONFIDENCE: <score>\n\n"
+            "CONFIDENCE: <score>"
+        )
+
+        full_prompt = (
+            f"{system_msg}\n\n"
             f"QUERY: {prompt}"
         )
 

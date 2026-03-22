@@ -8,8 +8,8 @@ from datetime import datetime
 from storage.config import get_api_key
 
 class DeepSeekAgent(BaseAgent):
-    def __init__(self, agent_id: str, model: str = "deepseek-chat"):
-        super().__init__(agent_id, model, "deepseek")
+    def __init__(self, agent_id: str, model: str = "deepseek-chat", system_prompt: Optional[str] = None):
+        super().__init__(agent_id, model, "deepseek", system_prompt)
         self.api_key = get_api_key("deepseek")
         self.base_url = "https://api.deepseek.com/v1/chat/completions"
 
@@ -18,23 +18,19 @@ class DeepSeekAgent(BaseAgent):
         if not self.api_key:
             raise ValueError(f"API key for {self.provider} not found. Please set DEEPSEEK_API_KEY.")
 
-        full_prompt = (
-            "You are a specialized research agent. Provide a detailed, fact-based response. "
-            "You MUST include verifiable sources and citations for all claims. "
-            "State your confidence level (0.0 to 1.0) at the end of your response in the format: "
-            "CONFIDENCE: <score>\n\n"
-        )
+        system_msg = self.system_prompt or "You are a specialized research agent. Provide a detailed, fact-based response. You MUST include verifiable sources and citations for all claims. State your confidence level (0.0 to 1.0) at the end of your response in the format: CONFIDENCE: <score>"
         
+        user_prompt = ""
         if context:
-            full_prompt += f"CONTEXT (Use this for research and tailoring):\n{context}\n\n"
+            user_prompt += f"CONTEXT (Use this for research and tailoring):\n{context}\n\n"
 
-        full_prompt += f"QUERY: {prompt}"
+        user_prompt += f"QUERY: {prompt}"
 
         payload = {
             "model": self.model,
             "messages": [
-                {"role": "system", "content": "You are a specialized research agent."},
-                {"role": "user", "content": full_prompt}
+                {"role": "system", "content": system_msg},
+                {"role": "user", "content": user_prompt}
             ],
             "stream": False
         }

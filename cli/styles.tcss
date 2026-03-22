@@ -1,11 +1,25 @@
+/* THE COUNCIL - Styles */
+
 CouncilApp {
     layout: vertical;
 }
 
+/* Base Styles (using default colors) */
 #sidebar {
     width: 25%;
+    min-width: 15;
     background: $surface;
     border-right: tall $primary;
+}
+
+#sidebar-resizer {
+    width: 1;
+    background: $primary-darken-3;
+    color: $primary;
+}
+
+#sidebar-resizer:hover {
+    background: $primary;
 }
 
 #agent-list {
@@ -31,7 +45,8 @@ AgentStatusWidget {
 }
 
 #main-content {
-    width: 80%;
+    width: 1fr;
+    background: $surface;
 }
 
 .section-title {
@@ -44,15 +59,62 @@ AgentStatusWidget {
 #output-log {
     height: 60%;
     border-bottom: solid $primary;
+    background: $surface;
+}
+
+#log-resizer {
+    height: 1;
+    background: $primary-darken-3;
+    color: $primary;
+    margin: 0;
+}
+
+#log-resizer:hover {
+    background: $primary;
 }
 
 #system-log {
-    height: 30%;
+    height: 1fr;
     background: $surface;
 }
 
 #command-input {
     height: 3;
     border: tall $primary;
-    margin: 1;
+    margin: 1 1 1 1;
 }
+
+/* PALETTE OVERRIDES */
+
+/* Cyberpunk Palette */
+.palette-cyberpunk #sidebar { background: #000000; border-right: tall #ff00ff; }
+.palette-cyberpunk .sidebar-title { background: #ff00ff; color: #ffffff; }
+.palette-cyberpunk #sidebar-resizer { background: #550055; color: #ff00ff; }
+.palette-cyberpunk #main-content { background: #000000; }
+.palette-cyberpunk .section-title { background: #00ffff; color: #000000; }
+.palette-cyberpunk #output-log { background: #000000; border-bottom: solid #ff00ff; color: #ffffff; }
+.palette-cyberpunk #system-log { background: #000000; color: #ffffff; }
+.palette-cyberpunk #log-resizer { background: #550055; color: #ff00ff; }
+.palette-cyberpunk #command-input { border: tall #ff00ff; color: #ffffff; }
+
+/* Nord Palette */
+.palette-nord #sidebar { background: #2e3440; border-right: tall #81a1c1; }
+.palette-nord .sidebar-title { background: #81a1c1; color: #eceff4; }
+.palette-nord #sidebar-resizer { background: #4c566a; color: #81a1c1; }
+.palette-nord #main-content { background: #2e3440; }
+.palette-nord .section-title { background: #88c0d0; color: #2e3440; }
+.palette-nord #output-log { background: #2e3440; border-bottom: solid #81a1c1; color: #eceff4; }
+.palette-nord #system-log { background: #2e3440; color: #eceff4; }
+.palette-nord #log-resizer { background: #4c566a; color: #81a1c1; }
+.palette-nord #command-input { border: tall #81a1c1; color: #eceff4; }
+
+/* Dracula Palette */
+.palette-dracula #sidebar { background: #282a36; border-right: tall #bd93f9; }
+.palette-dracula .sidebar-title { background: #bd93f9; color: #f8f8f2; }
+.palette-dracula #sidebar-resizer { background: #44475a; color: #bd93f9; }
+.palette-dracula #main-content { background: #282a36; }
+.palette-dracula .section-title { background: #ff79c6; color: #282a36; }
+.palette-dracula #output-log { background: #282a36; border-bottom: solid #bd93f9; color: #f8f8f2; }
+.palette-dracula #system-log { background: #282a36; color: #f8f8f2; }
+.palette-dracula #log-resizer { background: #44475a; color: #bd93f9; }
+.palette-dracula #command-input { border: tall #bd93f9; color: #f8f8f2; }
