@@ -5,7 +5,7 @@ from pathlib import Path
 from utils.models import Session
 from pydantic import TypeAdapter
 
-SESSIONS_DIR = Path("storage/sessions")
+SESSIONS_DIR = Path.home() / ".council" / "sessions"
 
 class SessionManager:
     def __init__(self, sessions_dir: Path = SESSIONS_DIR):

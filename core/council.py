@@ -6,12 +6,15 @@ from agents.base_agent import BaseAgent
 from agents.ollama_agent import OllamaAgent
 from agents.gemini_agent import GeminiAgent
 from agents.deepseek_agent import DeepSeekAgent
+from agents.claude_agent import ClaudeAgent
+from agents.openai_agent import OpenAIAgent
 from utils.models import Session, Agent, Output, Scores, AgentStatus, SessionStatus, OllamaModel
 from consensus.voting import ConsensusManager
 from consensus.elimination import find_lowest_rated_agent, eliminate_agent
 from storage.config import load_config, save_config, AppConfig
 from storage.sessions import SessionManager
 from utils.hallucination_check import HallucinationChecker
+from utils.source_validator import validate_sources
 from utils.embeddings import Embedder
 from storage.rag import VectorStore
 from utils.web_search import WebSearcher, format_search_results
@@ -71,18 +74,26 @@ class Council:
 
     def add_agent(self, provider: str, model: Optional[str] = None) -> str:
         agent_id = f"{provider}-{len(self.agents) + 1}"
-        
+        gen_timeout = self.config.generate_timeout
+        eval_timeout = self.config.evaluate_timeout
+
         if provider == "ollama":
             model = model or self.config.default_model
-            agent = OllamaAgent(agent_id, model)
+            agent = OllamaAgent(agent_id, model, generate_timeout=gen_timeout, evaluate_timeout=eval_timeout)
         elif provider == "gemini":
             model = model or "gemini-1.5-flash"
-            agent = GeminiAgent(agent_id, model)
+            agent = GeminiAgent(agent_id, model, generate_timeout=gen_timeout, evaluate_timeout=eval_timeout)
         elif provider == "deepseek":
             model = model or "deepseek-chat"
-            agent = DeepSeekAgent(agent_id, model)
+            agent = DeepSeekAgent(agent_id, model, generate_timeout=gen_timeout, evaluate_timeout=eval_timeout)
+        elif provider == "claude":
+            model = model or "claude-sonnet-4-20250514"
+            agent = ClaudeAgent(agent_id, model, generate_timeout=gen_timeout, evaluate_timeout=eval_timeout)
+        elif provider == "openai":
+            model = model or "gpt-4o"
+            agent = OpenAIAgent(agent_id, model, generate_timeout=gen_timeout, evaluate_timeout=eval_timeout)
         else:
-            raise ValueError(f"Unsupported provider: {provider}")
+            raise ValueError(f"Unsupported provider: {provider}. Supported: ollama, gemini, deepseek, claude, openai")
         
         self.agents.append(agent)
         return agent_id
@@ -107,8 +118,8 @@ class Council:
             agents=[Agent(agent_id=a.agent_id, provider=a.provider, model=a.model) for a in self.agents]
         )
 
-        active_agents = [a for a in self.agents if a.status == "active"]
-        
+        active_agents = [a for a in self.agents if a.status == AgentStatus.ACTIVE]
+
         # Round 1: Initial Proposals
         self.log("\n[bold green]--- Round 1: Initial Proposals ---[/]")
         tasks = [a.generate(query, context=initial_context) for a in active_agents]
@@ -221,7 +232,7 @@ class Council:
         if not query_embedding:
             return ""
             
-        matches = self.vector_store.search(query_embedding, top_k=2)
+        matches = self.vector_store.search(query_embedding, top_k=self.config.rag_top_k)
         if not matches:
             return ""
             
@@ -262,9 +273,9 @@ class Council:
 
         round_num = 1
         while True:
-            active_agents = [a for a in self.agents if a.status == "active"]
-            if len(active_agents) < 2:
-                self.log("[yellow]Minimum agents (2) reached or too few agents. Stopping iteration.[/]")
+            active_agents = [a for a in self.agents if a.status == AgentStatus.ACTIVE]
+            if len(active_agents) < self.config.min_agents:
+                self.log(f"[yellow]Minimum agents ({self.config.min_agents}) reached or too few agents. Stopping iteration.[/]")
                 break
 
             self.log(f"\n[bold green]--- Round {round_num} ---[/]")
@@ -285,6 +296,16 @@ class Council:
             if not valid_outputs:
                 self.log("[red]No valid outputs this round.[/]")
                 break
+
+            # Phase 1.5: Source Validation
+            for output in valid_outputs:
+                if output.sources:
+                    self.log(f"  Validating {len(output.sources)} source(s) from {output.agent_id}...")
+                    results = await validate_sources(output.sources)
+                    valid_count = sum(results)
+                    total_count = len(results)
+                    if total_count > 0:
+                        self.log(f"  - {valid_count}/{total_count} sources accessible")
 
             # Phase 2: Voting and Scoring
             self.log("Cross-validation in progress...")
@@ -322,7 +343,7 @@ class Council:
                     self.log(f"Consensus below threshold. [bold red]Eliminating agent: {lowest_agent_id}[/]")
                     for a in self.agents:
                         if a.agent_id == lowest_agent_id:
-                            a.status = "eliminated"
+                            a.status = AgentStatus.ELIMINATED
                     self.current_session.elimination_rounds.append(lowest_agent_id)
                     
                     # Refresh UI sidebar
@@ -332,8 +353,8 @@ class Council:
                     break
 
             round_num += 1
-            if round_num > 5: # Safety limit
-                self.log("[yellow]Maximum rounds reached. Stopping.[/]")
+            if round_num > self.config.max_rounds:
+                self.log(f"[yellow]Maximum rounds ({self.config.max_rounds}) reached. Stopping.[/]")
                 break
 
         # Save session

@@ -1,5 +1,6 @@
 import httpx
 import json
+import re
 import uuid
 from typing import List, Optional
 from agents.base_agent import BaseAgent
@@ -7,8 +8,9 @@ from utils.models import Output, Scores, AgentStatus
 from datetime import datetime
 
 class OllamaAgent(BaseAgent):
-    def __init__(self, agent_id: str, model: str = "qwen3-coder:30b", base_url: str = "http://localhost:11434"):
-        super().__init__(agent_id, model, "ollama")
+    def __init__(self, agent_id: str, model: str = "qwen3-coder:30b", base_url: str = "http://localhost:11434",
+                 generate_timeout: float = 300.0, evaluate_timeout: float = 120.0):
+        super().__init__(agent_id, model, "ollama", generate_timeout=generate_timeout, evaluate_timeout=evaluate_timeout)
         self.base_url = base_url
 
     async def generate(self, prompt: str, context: Optional[str] = None) -> Output:
@@ -40,7 +42,7 @@ class OllamaAgent(BaseAgent):
             }
         }
 
-        async with httpx.AsyncClient(timeout=300.0) as client:
+        async with httpx.AsyncClient(timeout=self.generate_timeout) as client:
             try:
                 response = await client.post(url, json=payload)
                 if response.status_code != 200:
@@ -48,14 +50,14 @@ class OllamaAgent(BaseAgent):
                     try:
                         error_json = response.json()
                         error_detail = error_json.get('error', response.text)
-                    except:
+                    except (json.JSONDecodeError, KeyError):
                         pass
                     raise Exception(f"Ollama Error {response.status_code}: {error_detail}")
                 
                 data = response.json()
                 content = data['message']['content']
             except httpx.TimeoutException:
-                raise Exception(f"Ollama Timeout: The model {self.model} took too long to respond (300s).")
+                raise Exception(f"Ollama Timeout: The model {self.model} took too long to respond ({self.generate_timeout}s).")
             except httpx.ConnectError:
                 raise Exception(f"Ollama Connection Error: Is Ollama running at {self.base_url}?")
             except Exception as e:
@@ -67,11 +69,10 @@ class OllamaAgent(BaseAgent):
             try:
                 conf_str = content.split("CONFIDENCE:")[1].strip().split()[0]
                 confidence = float(conf_str)
-            except:
+            except (ValueError, IndexError):
                 pass
 
         # Extract sources (look for URLs)
-        import re
         sources = re.findall(r'https?://\S+', content)
 
         return Output(
@@ -113,7 +114,7 @@ class OllamaAgent(BaseAgent):
             }
         }
 
-        async with httpx.AsyncClient(timeout=180.0) as client:
+        async with httpx.AsyncClient(timeout=self.evaluate_timeout) as client:
             try:
                 response = await client.post(url, json=payload)
                 if response.status_code != 200:

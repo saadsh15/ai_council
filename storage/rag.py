@@ -5,7 +5,7 @@ from typing import List, Dict, Optional
 from utils.embeddings import Embedder, cosine_similarity
 from datetime import datetime
 
-RAG_STORAGE = Path("storage/rag_index.json")
+RAG_STORAGE = Path.home() / ".council" / "rag_index.json"
 
 class MemoryItem:
     def __init__(self, text: str, embedding: List[float], metadata: Dict = None):
