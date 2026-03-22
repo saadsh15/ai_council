@@ -48,6 +48,7 @@ All commands are prefixed with `/council`:
 | `/council start` | Initialize the council with default local models. |
 | `/council add <provider> [model]` | Add a specific agent (e.g., `gemini`, `ollama`). |
 | `/council remove <agent_id>` | Remove a specific agent from the council. |
+|council preferences <text> | Set global research tailoring preferences|
 | `/council research <query>` | Start a research task with the elimination mechanism. |
 | `/council begin <query>` | Start a deliberative/collaborative research session. |
 | `/council list` | List all active agents and available models. |
