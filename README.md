@@ -44,20 +44,25 @@ All commands are prefixed with `/council`:
 
 | Command | Description |
 | :--- | :--- |
+| `/council help` | Display all available commands. |
 | `/council start` | Initialize the council with default local models. |
 | `/council add <provider> [model]` | Add a specific agent (e.g., `gemini`, `ollama`). |
+| `/council remove <agent_id>` | Remove a specific agent from the council. |
 | `/council research <query>` | Start a research task with the elimination mechanism. |
 | `/council begin <query>` | Start a deliberative/collaborative research session. |
 | `/council list` | List all active agents and available models. |
-| `/council config` | View or modify threshold, timeout, and preferences. |
+| `/council config` | View current configuration. |
 | `/council history` | View previous research sessions. |
+| `/council clear` | Clear research session history. |
 | `/quit` | Exit the application. |
 
 ## ⚙️ Configuration
 
-You can tailor research results by setting user preferences:
+You can tailor research results and system behavior:
 ```bash
 /council config preferences "I prefer technical deep-dives with academic citations."
+/council config model "llama3:8b"     # Set default Ollama model
+/council config threshold 85          # Set consensus threshold (0-100)
 ```
 
 ## 🏗️ Architecture
