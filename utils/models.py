@@ -29,10 +29,9 @@ class Agent(BaseModel):
     accuracy_history: List[float] = []
 
 class Scores(BaseModel):
-    accuracy: float = 0.0
-    completeness: float = 0.0
-    source_quality: float = 0.0
-    clarity: float = 0.0
+    factual_accuracy_faithfulness: float = 0.0
+    relevance_completeness: float = 0.0
+    clarity_usability: float = 0.0
     average: float = 0.0
 
 class Output(BaseModel):

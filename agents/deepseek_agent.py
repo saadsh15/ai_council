@@ -75,11 +75,10 @@ class DeepSeekAgent(BaseAgent):
 
         eval_prompt = (
             "You are an expert critic. Evaluate the following research output based on: "
-            "1. Accuracy (factual correctness)\n"
-            "2. Completeness (coverage of topic)\n"
-            "3. Source Quality (verifiability of citations)\n"
-            "4. Clarity (readability and logic)\n\n"
-            "Output MUST be in JSON format with keys: 'accuracy', 'completeness', 'source_quality', 'clarity' "
+            "1. Factual Accuracy & Faithfulness (correctness, grounded in provided context, no hallucinations)\n"
+            "2. Relevance & Completeness (directly addresses query, covers all key aspects)\n"
+            "3. Clarity & Usability (readability, logical structure, practical utility)\n\n"
+            "Output MUST be in JSON format with keys: 'factual_accuracy_faithfulness', 'relevance_completeness', 'clarity_usability' "
             "(scores from 0.0 to 1.0) and an 'average' score.\n\n"
             f"OUTPUT TO EVALUATE:\n{other_output.content}"
         )
@@ -107,9 +106,8 @@ class DeepSeekAgent(BaseAgent):
             eval_data = json.loads(content)
             
             return Scores(
-                accuracy=eval_data.get('accuracy', 0.1),
-                completeness=eval_data.get('completeness', 0.1),
-                source_quality=eval_data.get('source_quality', 0.1),
-                clarity=eval_data.get('clarity', 0.1),
+                factual_accuracy_faithfulness=eval_data.get('factual_accuracy_faithfulness', 0.1),
+                relevance_completeness=eval_data.get('relevance_completeness', 0.1),
+                clarity_usability=eval_data.get('clarity_usability', 0.1),
                 average=eval_data.get('average', 0.1)
             )

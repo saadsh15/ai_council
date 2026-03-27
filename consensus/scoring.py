@@ -3,18 +3,17 @@ from utils.models import Scores, Output
 
 def calculate_weighted_average(scores: Scores) -> float:
     """Calculate the weighted average based on project criteria."""
+    # Weights for the new criteria
     weights = {
-        "accuracy": 0.35,
-        "completeness": 0.25,
-        "source_quality": 0.25,
-        "clarity": 0.15
+        "factual_accuracy_faithfulness": 0.40,
+        "relevance_completeness": 0.40,
+        "clarity_usability": 0.20
     }
     
     weighted_sum = (
-        scores.accuracy * weights["accuracy"] +
-        scores.completeness * weights["completeness"] +
-        scores.source_quality * weights["source_quality"] +
-        scores.clarity * weights["clarity"]
+        scores.factual_accuracy_faithfulness * weights["factual_accuracy_faithfulness"] +
+        scores.relevance_completeness * weights["relevance_completeness"] +
+        scores.clarity_usability * weights["clarity_usability"]
     )
     
     return weighted_sum
@@ -26,14 +25,12 @@ def update_output_scores(output: Output, peer_scores: List[Scores]):
 
     num_evals = len(peer_scores)
     
-    total_accuracy = sum(s.accuracy for s in peer_scores)
-    total_completeness = sum(s.completeness for s in peer_scores)
-    total_source_quality = sum(s.source_quality for s in peer_scores)
-    total_clarity = sum(s.clarity for s in peer_scores)
+    total_factual_accuracy_faithfulness = sum(s.factual_accuracy_faithfulness for s in peer_scores)
+    total_relevance_completeness = sum(s.relevance_completeness for s in peer_scores)
+    total_clarity_usability = sum(s.clarity_usability for s in peer_scores)
     
-    output.scores.accuracy = total_accuracy / num_evals
-    output.scores.completeness = total_completeness / num_evals
-    output.scores.source_quality = total_source_quality / num_evals
-    output.scores.clarity = total_clarity / num_evals
+    output.scores.factual_accuracy_faithfulness = total_factual_accuracy_faithfulness / num_evals
+    output.scores.relevance_completeness = total_relevance_completeness / num_evals
+    output.scores.clarity_usability = total_clarity_usability / num_evals
     
     output.scores.average = calculate_weighted_average(output.scores)

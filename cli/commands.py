@@ -21,6 +21,7 @@ class CommandHandler:
             "/council remove": self.handle_remove,
             "/council list": self.handle_list,
             "/council research": self.handle_research,
+            "/council web-research": self.handle_web_research,
             "/council config": self.handle_config,
             "/council preferences": self.handle_preferences,
             "/council history": self.handle_history,
@@ -57,7 +58,8 @@ class CommandHandler:
 /council list - List all agents
 /council preferences <text> - Set global research tailoring preferences
 /council toggle - Toggle active agents sidebar (Shortcut: Ctrl+B)
-/council research <query> - Begin standard research (consensus via elimination)
+/council research <query> - Begin offline research (uses RAG only)
+/council web-research <query> - Begin web-connected research (Web + RAG)
 /council config - View/modify configuration (e.g., /council config prompt <text>)
 /council history - View history
 /council clear - Clear current session
@@ -160,9 +162,15 @@ class CommandHandler:
         query = " ".join(args)
         # We don't await run_research here because we want the TUI to stay responsive
         # and Council will log to the output-log directly.
-        # But for now, let's await it to keep it simple, or use a background task.
-        asyncio.create_task(self.council.run_research(query))
-        return CommandResult(success=True, message=f"Research started for: [cyan]{query}[/]")
+        asyncio.create_task(self.council.run_research(query, use_web=False))
+        return CommandResult(success=True, message=f"Research started (offline/RAG): [cyan]{query}[/]")
+
+    async def handle_web_research(self, args: List[str]) -> CommandResult:
+        if not args:
+            return CommandResult(success=False, message="Usage: /council web-research <query>")
+        query = " ".join(args)
+        asyncio.create_task(self.council.run_research(query, use_web=True))
+        return CommandResult(success=True, message=f"Web-connected research started: [cyan]{query}[/]")
 
     async def handle_vote(self, args: List[str]) -> CommandResult:
         return CommandResult(success=True, message="Manual voting not fully implemented yet.")
