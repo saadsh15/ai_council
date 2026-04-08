@@ -118,3 +118,67 @@ AgentStatusWidget {
 .palette-dracula #system-log { background: #282a36; color: #f8f8f2; }
 .palette-dracula #log-resizer { background: #44475a; color: #bd93f9; }
 .palette-dracula #command-input { border: tall #bd93f9; color: #f8f8f2; }
+
+/* MODAL STYLES */
+ModelSelectionModal {
+    align: center middle;
+    background: $background 50%;
+}
+
+.modal-container {
+    width: 60;
+    height: 30;
+    background: $surface;
+    border: tall $primary;
+    padding: 1 2;
+}
+
+.modal-title {
+    content-align: center middle;
+    text-style: bold;
+    width: 100%;
+    margin-bottom: 1;
+    color: $text;
+}
+
+.model-list-container {
+    height: 1fr;
+    border: solid $primary-darken-3;
+    background: $surface-darken-1;
+}
+
+.model-row {
+    height: 3;
+    padding: 0 1;
+    align: left middle;
+}
+
+.model-row:focus-within {
+    background: $primary 20%;
+}
+
+.model-name {
+    width: 1fr;
+    content-align: left middle;
+}
+
+.count-btn {
+    min-width: 5;
+    margin: 0 1;
+}
+
+.count-label {
+    width: 5;
+    content-align: center middle;
+    text-style: bold;
+}
+
+.modal-buttons {
+    height: 3;
+    margin-top: 1;
+    align: center middle;
+}
+
+.modal-buttons Button {
+    margin: 0 2;
+}

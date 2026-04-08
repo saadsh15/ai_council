@@ -54,7 +54,7 @@ class CommandHandler:
 /council start - Initialize the council with default agents
 /council begin <query> - Start a deliberative council meeting (agents talk to each other)
 /council add <provider> [model] - Add an agent
-/council remove <agent_id> - Remove an agent
+/council remove [model] - Remove all agents, or specific agents by model/id
 /council list - List all agents
 /council preferences <text> - Set global research tailoring preferences
 /council toggle - Toggle active agents sidebar (Shortcut: Ctrl+B)
@@ -91,20 +91,8 @@ class CommandHandler:
         if not self.council.available_ollama_models:
             return CommandResult(success=False, message="No Ollama models found. Please download one using 'ollama pull <model>'.")
 
-        # Clear existing agents to start fresh
-        self.council.agents = []
-        
-        # Add agents for the first 3 unique models available
-        models_to_add = [m.name for m in self.council.available_ollama_models[:3]]
-        
-        # Ensure we have at least 2 agents (even if it's the same model twice)
-        if len(models_to_add) == 1:
-            models_to_add.append(models_to_add[0])
-            
-        for model in models_to_add:
-            self.council.add_agent("ollama", model)
-            
-        return CommandResult(success=True, message=f"Council initialized with {len(self.council.agents)} agents using models: {', '.join(models_to_add)}")
+        self.app.show_start_modal(self.council.available_ollama_models)
+        return CommandResult(success=True, message="Opening Model Selection Modal...")
 
     async def handle_add(self, args: List[str]) -> CommandResult:
         if not args:
@@ -125,9 +113,18 @@ class CommandHandler:
 
     async def handle_remove(self, args: List[str]) -> CommandResult:
         if not args:
-            return CommandResult(success=False, message="Usage: /council remove <agent_id>")
-        self.council.remove_agent(args[0])
-        return CommandResult(success=True, message=f"Removed agent: {args[0]}")
+            self.council.agents = []
+            return CommandResult(success=True, message="Removed all active agents.")
+        
+        target = " ".join(args)
+        initial_count = len(self.council.agents)
+        self.council.agents = [a for a in self.council.agents if a.agent_id != target and a.model != target]
+        removed_count = initial_count - len(self.council.agents)
+        
+        if removed_count == 0:
+            return CommandResult(success=False, message=f"No agents found matching '{target}'.")
+            
+        return CommandResult(success=True, message=f"Removed {removed_count} agent(s) matching '{target}'.")
 
     async def handle_list(self, args: List[str]) -> CommandResult:
         # Agents in Council

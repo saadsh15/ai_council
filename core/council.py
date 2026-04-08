@@ -85,22 +85,22 @@ class Council:
             self.log(f"[yellow]Ollama connection failed: {str(e)}[/]")
 
     def add_agent(self, provider: str, model: Optional[str] = None) -> str:
-        agent_id = f"{provider}-{len(self.agents) + 1}"
-        
         if provider == "ollama":
             model = model or self.config.default_model
+            agent_id = f"{model}-{len(self.agents) + 1}"
             agent = OllamaAgent(agent_id, model, system_prompt=self.config.system_prompt)
         elif provider == "gemini":
             model = model or "gemini-1.5-flash"
+            agent_id = f"{model}-{len(self.agents) + 1}"
             agent = GeminiAgent(agent_id, model, system_prompt=self.config.system_prompt)
         elif provider == "deepseek":
             model = model or "deepseek-chat"
+            agent_id = f"{model}-{len(self.agents) + 1}"
             agent = DeepSeekAgent(agent_id, model, system_prompt=self.config.system_prompt)
         else:
             raise ValueError(f"Unsupported provider: {provider}")
-        
-        self.agents.append(agent)
-        
+
+        self.agents.append(agent)        
         # Refresh UI sidebar if available
         if hasattr(self.logger, "__self__") and hasattr(self.logger.__self__, "update_agent_list"):
             self.logger.__self__.update_agent_list()

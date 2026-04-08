@@ -9,6 +9,7 @@ from rich.markdown import Markdown
 import asyncio
 
 from cli.commands import CommandHandler
+from cli.start_modal import ModelSelectionModal
 from core.council import Council
 from utils.models import AgentStatus
 
@@ -224,6 +225,30 @@ class CouncilApp(App):
                 self.remove_class(cls)
         # Add the new one
         self.add_class(f"palette-{palette_name}")
+
+    def show_start_modal(self, available_models):
+        """Push the model selection modal."""
+        self.push_screen(ModelSelectionModal(available_models), self._on_modal_dismiss)
+
+    def _on_modal_dismiss(self, result: dict) -> None:
+        """Handle the result from the modal."""
+        if result is not None:
+            self.council.agents = []
+            added_models = []
+            for model_name, count in result.items():
+                if count > 0:
+                    for _ in range(count):
+                        self.council.add_agent("ollama", model_name)
+                    added_models.append(f"{count}x {model_name}")
+            
+            self.update_agent_list()
+            
+            if added_models:
+                self.log_message(f"Council initialized with {len(self.council.agents)} agents using models: {', '.join(added_models)}")
+            else:
+                self.log_message("[yellow]No agents selected. Council is empty.[/yellow]")
+        else:
+            self.log_message("[yellow]Council start cancelled.[/yellow]")
 
     def update_agent_list(self):
         """Sync the sidebar with active council agents."""
