@@ -14,19 +14,19 @@ class CommandHandler:
         self.app = app
         self.council = council
         self.commands = {
-            "/council help": self.handle_help,
-            "/council start": self.handle_start,
-            "/council begin": self.handle_begin,
-            "/council add": self.handle_add,
-            "/council remove": self.handle_remove,
-            "/council list": self.handle_list,
-            "/council research": self.handle_research,
-            "/council web-research": self.handle_web_research,
-            "/council config": self.handle_config,
-            "/council preferences": self.handle_preferences,
-            "/council history": self.handle_history,
-            "/council clear": self.handle_clear,
-            "/council toggle": self.handle_toggle,
+            "/c help": self.handle_help,
+            "/c start": self.handle_start,
+            "/c begin": self.handle_begin,
+            "/c add": self.handle_add,
+            "/c remove": self.handle_remove,
+            "/c list": self.handle_list,
+            "/c research": self.handle_research,
+            "/c web-research": self.handle_web_research,
+            "/c config": self.handle_config,
+            "/c preferences": self.handle_preferences,
+            "/c history": self.handle_history,
+            "/c clear": self.handle_clear,
+            "/c toggle": self.handle_toggle,
             "/quit": self.handle_quit,
         }
 
@@ -51,25 +51,25 @@ class CommandHandler:
     async def handle_help(self, args: List[str]) -> CommandResult:
         help_text = """
 [bold yellow]Available Commands:[/bold yellow]
-/council start - Initialize the council with default agents
-/council begin <query> - Start a deliberative council meeting (agents talk to each other)
-/council add <provider> [model] - Add an agent
-/council remove [model] - Remove all agents, or specific agents by model/id
-/council list - List all agents
-/council preferences <text> - Set global research tailoring preferences
-/council toggle - Toggle active agents sidebar (Shortcut: Ctrl+B)
-/council research <query> - Begin offline research (uses RAG only)
-/council web-research <query> - Begin web-connected research (Web + RAG)
-/council config - View/modify configuration (e.g., /council config prompt <text>)
-/council history - View history
-/council clear - Clear current session
+/c start - Initialize the council with default agents
+/c begin <query> - Start a deliberative council meeting (agents talk to each other)
+/c add <provider> [model] - Add an agent
+/c remove [model] - Remove all agents, or specific agents by model/id
+/c list - List all agents
+/c preferences <text> - Set global research tailoring preferences
+/c toggle - Toggle active agents sidebar (Shortcut: Ctrl+B)
+/c research <query> - Begin offline research (uses RAG only)
+/c web-research <query> - Begin web-connected research (Web + RAG)
+/c config - View/modify configuration (e.g., /c config prompt <text>)
+/c history - View history
+/c clear - Clear current session
 /quit - Exit
 """
         return CommandResult(success=True, message=help_text)
 
     async def handle_preferences(self, args: List[str]) -> CommandResult:
         if not args:
-            return CommandResult(success=False, message="Usage: /council preferences <text>")
+            return CommandResult(success=False, message="Usage: /c preferences <text>")
         
         value = " ".join(args)
         from storage.config import save_config
@@ -79,7 +79,7 @@ class CommandHandler:
 
     async def handle_begin(self, args: List[str]) -> CommandResult:
         if not args:
-            return CommandResult(success=False, message="Usage: /council begin <query>")
+            return CommandResult(success=False, message="Usage: /c begin <query>")
         query = " ".join(args)
         asyncio.create_task(self.council.run_deliberation(query))
         return CommandResult(success=True, message=f"Council meeting convened for: [cyan]{query}[/]")
@@ -96,7 +96,7 @@ class CommandHandler:
 
     async def handle_add(self, args: List[str]) -> CommandResult:
         if not args:
-            return CommandResult(success=False, message="Usage: /council add <provider> [model]")
+            return CommandResult(success=False, message="Usage: /c add <provider> [model]")
         provider = args[0]
         model = args[1] if len(args) > 1 else None
         
@@ -155,7 +155,7 @@ class CommandHandler:
 
     async def handle_research(self, args: List[str]) -> CommandResult:
         if not args:
-            return CommandResult(success=False, message="Usage: /council research <query>")
+            return CommandResult(success=False, message="Usage: /c research <query>")
         query = " ".join(args)
         # We don't await run_research here because we want the TUI to stay responsive
         # and Council will log to the output-log directly.
@@ -164,7 +164,7 @@ class CommandHandler:
 
     async def handle_web_research(self, args: List[str]) -> CommandResult:
         if not args:
-            return CommandResult(success=False, message="Usage: /council web-research <query>")
+            return CommandResult(success=False, message="Usage: /c web-research <query>")
         query = " ".join(args)
         asyncio.create_task(self.council.run_research(query, use_web=True))
         return CommandResult(success=True, message=f"Web-connected research started: [cyan]{query}[/]")
@@ -192,7 +192,7 @@ class CommandHandler:
             return CommandResult(success=True, message=msg)
         
         if len(args) < 2:
-            return CommandResult(success=False, message="Usage: /council config <key> <value>")
+            return CommandResult(success=False, message="Usage: /c config <key> <value>")
             
         key = args[0].lower()
         value = " ".join(args[1:])

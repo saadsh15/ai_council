@@ -202,7 +202,7 @@ class CouncilApp(App):
                 yield HorizontalResizer(id="log-resizer")
                 yield Static("SYSTEM LOGS", classes="section-title")
                 yield RichLog(id="system-log", highlight=True, markup=True)
-                yield Input(placeholder="Enter command (e.g., /council help)...", id="command-input")
+                yield Input(placeholder="Enter command (e.g., /c help)...", id="command-input")
         yield Footer()
 
     def on_mount(self) -> None:
@@ -212,7 +212,7 @@ class CouncilApp(App):
         self.set_palette(self.council.config.palette)
         
         self.system_log("Welcome to [bold]THE COUNCIL[/] Multi-Agent AI Research Terminal.")
-        self.system_log("Type [cyan]/council help[/cyan] for available commands.")
+        self.system_log("Type [cyan]/c help[/cyan] for available commands.")
         # Refresh models on start
         asyncio.create_task(self.council.refresh_models())
         self.update_agent_list()

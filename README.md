@@ -19,8 +19,8 @@
   - **Parallel Execution:** Searches are performed in parallel for maximum speed.
 - **Interactive TUI:** A beautiful Terminal User Interface built with `Textual`.
 - **Flexible Modes:**
-  - `/council research`: Competitive mode where agents are ranked and potentially eliminated.
-  - `/council begin`: Robust deliberative mode with iterative refinement and strict consensus thresholds.
+  - `/c research`: Competitive mode where agents are ranked and potentially eliminated.
+  - `/c begin`: Robust deliberative mode with iterative refinement and strict consensus thresholds.
 
 ## 🚀 Quick Start
 
@@ -64,32 +64,32 @@ the-council
 
 ## 🛠️ Commands
 
-All commands are prefixed with `/council`:
+All commands are prefixed with `/c`:
 
 | Command | Description |
 | :--- | :--- |
-| `/council help` | Display all available commands. |
-| `/council start` | Initialize the council with default local models. |
-| `/council add <provider> [model]` | Add a specific agent (e.g., `gemini`, `ollama`, `deepseek`). |
-| `/council remove <agent_id>` | Remove a specific agent from the council. |
-| `/council preferences <text>` | Set global research tailoring preferences. |
-| **`/council research <query>`** | **Offline Research:** Uses RAG and user preferences only. |
-| **`/council web-research <query>`**| **Web Research:** Forces agents to use Web and News search results. |
-| **`/council begin <query>`** | **Deliberation:** Collaborative mode with iterative refinement and a 0.82 consensus threshold. |
-| `/council list` | List all active agents and available models. |
-| `/council config` | View/modify current configuration. |
-| `/council history` | View previous research sessions. |
-| `/council clear` | Clear research session history. |
+| `/c help` | Display all available commands. |
+| `/c start` | Initialize the council with default local models. |
+| `/c add <provider> [model]` | Add a specific agent (e.g., `gemini`, `ollama`, `deepseek`). |
+| `/c remove <agent_id>` | Remove a specific agent from the council. |
+| `/c preferences <text>` | Set global research tailoring preferences. |
+| **`/c research <query>`** | **Offline Research:** Uses RAG and user preferences only. |
+| **`/c web-research <query>`**| **Web Research:** Forces agents to use Web and News search results. |
+| **`/c begin <query>`** | **Deliberation:** Collaborative mode with iterative refinement and a 0.82 consensus threshold. |
+| `/c list` | List all active agents and available models. |
+| `/c config` | View/modify current configuration. |
+| `/c history` | View previous research sessions. |
+| `/c clear` | Clear research session history. |
 | `/quit` | Exit the application. |
 
 ## ⚙️ Configuration
 
 You can tailor research results and system behavior:
 ```bash
-/council config preferences "I prefer technical deep-dives with academic citations."
-/council config model "llama3:8b"     # Set default Ollama model
-/council config threshold 85          # Set consensus threshold (0-100)
-/council config prompt "You are..."   # Set custom global system prompt
+/c config preferences "I prefer technical deep-dives with academic citations."
+/c config model "llama3:8b"     # Set default Ollama model
+/c config threshold 85          # Set consensus threshold (0-100)
+/c config prompt "You are..."   # Set custom global system prompt
 ```
 
 ## 🏗️ Architecture
