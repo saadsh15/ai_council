@@ -14,10 +14,41 @@ if ! command -v python3 &> /dev/null; then
     exit 1
 fi
 
-# Create virtual environment if it doesn't exist
-if [ ! -d "$VENV_DIR" ]; then
+# Create virtual environment if it doesn't exist or is incomplete
+if [ ! -d "$VENV_DIR" ] || [ ! -f "$VENV_DIR/bin/activate" ]; then
     echo "Creating virtual environment in $VENV_DIR..."
-    python3 -m venv "$VENV_DIR"
+    # Clean up incomplete directory if it exists
+    rm -rf "$VENV_DIR"
+    
+    # Try standard venv creation
+    if python3 -m venv "$VENV_DIR" 2>/dev/null; then
+        echo "Virtual environment created successfully."
+    else
+        echo "Standard venv creation failed (likely due to missing ensurepip/python3-venv). Attempting bootstrap fallback..."
+        if python3 -m venv --without-pip "$VENV_DIR"; then
+            echo "Virtual environment created without pip. Bootstrapping pip..."
+            if command -v curl &> /dev/null; then
+                curl -sS https://bootstrap.pypa.io/get-pip.py -o "$VENV_DIR/get-pip.py"
+            elif command -v wget &> /dev/null; then
+                wget -qO "$VENV_DIR/get-pip.py" https://bootstrap.pypa.io/get-pip.py
+            else
+                echo "Error: Neither curl nor wget is available to bootstrap pip. Please install python3-venv or curl/wget."
+                exit 1
+            fi
+            
+            if "$VENV_DIR/bin/python" "$VENV_DIR/get-pip.py"; then
+                rm -f "$VENV_DIR/get-pip.py"
+                echo "Pip bootstrapped successfully."
+            else
+                rm -f "$VENV_DIR/get-pip.py"
+                echo "Error: Failed to bootstrap pip."
+                exit 1
+            fi
+        else
+            echo "Error: Failed to create virtual environment."
+            exit 1
+        fi
+    fi
 fi
 
 # Activate virtual environment
