@@ -1,3 +1,5 @@
+from typing import Optional
+
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, Input, RichLog, Static, ListView, ListItem
 from textual.containers import Horizontal, Vertical, ScrollableContainer
